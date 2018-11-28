@@ -162,7 +162,7 @@ function getValidKeypairForSlot(library, slot) {
 	const lastBlock = genesisBlock;
 	const round = slots.calcRound(lastBlock.height);
 
-	return generateDelegateListPromisified(round, null)
+	return generateDelegateListPromisified(round)
 		.then(list => {
 			const delegatePublicKey = list[slot % ACTIVE_DELEGATES];
 			const passphrase = _.find(genesisDelegates, delegate => {
@@ -886,7 +886,7 @@ describe('blocks/verify', () => {
 					if (err) {
 						return done(err);
 					}
-					return delegates.generateDelegateList(1, null, done);
+					return delegates.generateDelegateList(1, done);
 				}
 			);
 		});

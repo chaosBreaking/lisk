@@ -365,7 +365,6 @@ __private.getOutsiders = function(scope, cb, tx) {
 	}
 	return modules.delegates.generateDelegateList(
 		scope.round,
-		null,
 		(err, roundDelegates) => {
 			if (err) {
 				return setImmediate(cb, err);
