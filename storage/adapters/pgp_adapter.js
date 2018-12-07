@@ -110,8 +110,7 @@ class PgpAdapter extends BaseAdapter {
 		self.pgp.end();
 		self.db = self.pgp(self.options);
 
-		// Hack for now to mimic the connect event
-		return Promise.delay(3000, true);
+		return self.db.connect({ direct: false });
 	}
 
 	disconnect() {
