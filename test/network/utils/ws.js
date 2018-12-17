@@ -29,9 +29,9 @@ module.exports = {
 			port: null,
 			autoReconnect: true,
 			autoReconnectOptions: {
-				initialDelay: 1000,
+				initialDelay: 100,
 				randomness: 0,
-				maxDelay: 10000,
+				maxDelay: 100,
 			},
 			// Since we are running a multiple nodes on a single machine, we
 			// need to give nodes a lot of time to respond.
