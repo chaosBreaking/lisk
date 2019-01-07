@@ -107,147 +107,132 @@ describe('signatures', () => {
 
 	describe('shared', () => {
 		describe('postSignature', () => {
-			describe('when modules are not loaded', () => {
-				it('should call callback with ApiError');
-				it(
-					'should call callback with ApiError containing message = "Blockchain is loading"'
+			const req = {
+				body: {
+					signature: 'aSignature',
+					transactionId: 'aTransactionId',
+					publicKey: 'aPublicKey',
+				},
+			};
+
+			let postSignatureSpy;
+
+			before(done => {
+				postSignatureSpy = sinonSandbox.spy(
+					library.modules.transport.shared,
+					'postSignature'
 				);
-				it('should call callback with ApiError containing code = 500');
+				library.modules.signatures.shared.postSignature(
+					req.body,
+					(error, response) => {
+						done();
+					}
+				);
 			});
 
-			describe('when modules are loaded', () => {
-				// Doesnt matter if request args are not valid as that is out of this scope for this tests
-				const req = {
-					body: {
-						signature: 'aSignature',
-						transactionId: 'aTransactionId',
-						publicKey: 'aPublicKey',
-					},
-				};
+			it('should call modules.transport.shared.postSignature with req.body', done => {
+				expect(postSignatureSpy).to.be.calledWith({ signature: req.body });
+				sinonSandbox.restore();
+				done();
+			});
 
-				let postSignatureSpy;
+			describe('when modules.transport.shared.postSignature fails with result', () => {
+				let postSignatureStub;
 
 				before(done => {
-					postSignatureSpy = sinonSandbox.spy(
+					postSignatureStub = sinonSandbox.stub(
 						library.modules.transport.shared,
 						'postSignature'
 					);
+					done();
+				});
+
+				after(done => {
+					sinonSandbox.restore();
+					done();
+				});
+
+				it('should call callback with ApiError', done => {
+					postSignatureStub.yields(null, { success: false });
+
 					library.modules.signatures.shared.postSignature(
 						req.body,
-						(error, response) => {
+						(error, result) => {
+							expect(error).to.be.instanceof(ApiError);
 							done();
 						}
 					);
 				});
 
-				it('should call modules.transport.shared.postSignature with req.body', done => {
-					expect(postSignatureSpy).to.be.calledWith({ signature: req.body });
-					sinonSandbox.restore();
+				describe('when result.message = "Invalid signature body"', () => {
+					it('should call callback with ApiError containing code = 400', done => {
+						// Force library.modules.transport.shared.postSignature to fail with custom message
+						postSignatureStub.yields(null, {
+							success: false,
+							message: 'Invalid signature body',
+						});
+
+						library.modules.signatures.shared.postSignature(
+							req.body,
+							(error, result) => {
+								expect(error.code).to.equal(400);
+								done();
+							}
+						);
+					});
+				});
+
+				describe('when result.message != "Invalid signature body"', () => {
+					it('should call callback with ApiError containing code = 500', done => {
+						// Force library.modules.transport.shared.postSignature to fail with custom message
+						postSignatureStub.yields(null, {
+							success: false,
+							message: 'A different message',
+						});
+
+						library.modules.signatures.shared.postSignature(
+							req.body,
+							(error, result) => {
+								expect(error.code).to.equal(500);
+								done();
+							}
+						);
+					});
+				});
+			});
+
+			describe('when modules.transport.shared.postSignature succeeds with result', () => {
+				let postSignatureError;
+				let postSignatureResult;
+
+				before(done => {
+					const postSignatureStub = sinonSandbox.stub(
+						library.modules.transport.shared,
+						'postSignature'
+					);
+					// Force library.modules.transport.shared.postSignature to succeed
+					postSignatureStub.yields(null, {
+						success: true,
+					});
+
+					library.modules.signatures.shared.postSignature(
+						req.body,
+						(error, result) => {
+							postSignatureError = error;
+							postSignatureResult = result;
+							done();
+						}
+					);
+				});
+
+				it('should call callback with error = null', done => {
+					expect(postSignatureError).to.be.null;
 					done();
 				});
 
-				describe('when modules.transport.shared.postSignature fails with result', () => {
-					let postSignatureStub;
-
-					before(done => {
-						postSignatureStub = sinonSandbox.stub(
-							library.modules.transport.shared,
-							'postSignature'
-						);
-						done();
-					});
-
-					after(done => {
-						sinonSandbox.restore();
-						done();
-					});
-
-					it('should call callback with ApiError', done => {
-						postSignatureStub.yields(null, { success: false });
-
-						library.modules.signatures.shared.postSignature(
-							req.body,
-							(error, result) => {
-								expect(error).to.be.instanceof(ApiError);
-								done();
-							}
-						);
-					});
-
-					it(
-						'should call callback with ApiError containing message = "Blockchain is loading"'
-					);
-
-					describe('when result.message = "Invalid signature body"', () => {
-						it('should call callback with ApiError containing code = 400', done => {
-							// Force library.modules.transport.shared.postSignature to fail with custom message
-							postSignatureStub.yields(null, {
-								success: false,
-								message: 'Invalid signature body',
-							});
-
-							library.modules.signatures.shared.postSignature(
-								req.body,
-								(error, result) => {
-									expect(error.code).to.equal(400);
-									done();
-								}
-							);
-						});
-					});
-
-					describe('when result.message != "Invalid signature body"', () => {
-						it('should call callback with ApiError containing code = 500', done => {
-							// Force library.modules.transport.shared.postSignature to fail with custom message
-							postSignatureStub.yields(null, {
-								success: false,
-								message: 'A different message',
-							});
-
-							library.modules.signatures.shared.postSignature(
-								req.body,
-								(error, result) => {
-									expect(error.code).to.equal(500);
-									done();
-								}
-							);
-						});
-					});
-				});
-
-				describe('when modules.transport.shared.postSignature succeeds with result', () => {
-					let postSignatureError;
-					let postSignatureResult;
-
-					before(done => {
-						const postSignatureStub = sinonSandbox.stub(
-							library.modules.transport.shared,
-							'postSignature'
-						);
-						// Force library.modules.transport.shared.postSignature to succeed
-						postSignatureStub.yields(null, {
-							success: true,
-						});
-
-						library.modules.signatures.shared.postSignature(
-							req.body,
-							(error, result) => {
-								postSignatureError = error;
-								postSignatureResult = result;
-								done();
-							}
-						);
-					});
-
-					it('should call callback with error = null', done => {
-						expect(postSignatureError).to.be.null;
-						done();
-					});
-
-					it('should call callback with result containing status = "Signature Accepted"', done => {
-						expect(postSignatureResult.status).to.equal('Signature Accepted');
-						done();
-					});
+				it('should call callback with result containing status = "Signature Accepted"', done => {
+					expect(postSignatureResult.status).to.equal('Signature Accepted');
+					done();
 				});
 			});
 		});
